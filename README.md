@@ -2,9 +2,12 @@
 
 Protótipo experimental de jogo de artilharia 2D, inspirado no gênero de combate balístico com terreno destrutível.
 
-## Jogar
+## Jogar e editar o layout
 
-Abra `index.html` no navegador. Quando o GitHub Pages estiver habilitado, o protótipo poderá ser acessado pela URL publicada em **Settings → Pages**.
+- [Jogo 2D v0.2](https://contatomatheusneves-max.github.io/artillery-moba-2d/)
+- [Editor visual de interface](https://contatomatheusneves-max.github.io/artillery-moba-2d/layout-editor.html)
+
+O editor permite adicionar, arrastar e redimensionar botões, textos e painéis; trocar cores e editar Menu ou HUD. Salva no navegador e exporta/importa um arquivo JSON. É uma ferramenta para prototipar o visual; ainda não conecta os botões às funções reais do jogo.
 
 ## Versão atual: 0.2
 
