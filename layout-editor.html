@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Editor de Interface | Artillery 2D</title>
+<style>
+:root{color-scheme:dark;--bg:#0a101b;--panel:#121d2c;--line:#2b4054;--text:#ecf4ff;--muted:#93a9c2;--accent:#f5a45b}
+*{box-sizing:border-box}
+body{margin:0;background:#09111d;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;font-size:13px}
+button,input,select{font:inherit}button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #77c9ee;outline-offset:2px}
+button{background:#1b3045;border:1px solid #39546d;border-radius:8px;color:#dceeff;padding:9px 11px;font-weight:700;transition:.12s}
+button:hover{background:#263e55;border-color:#6a8ba7}
+button.primary{background:#d38b43;color:#191b20;border-color:#f6b76c}
+button.primary:hover{background:#f2ad65}
+button.danger{background:#391f2a;border-color:#714150;color:#ffb5bd}
+button.compact{padding:6px 9px}
+button:disabled{opacity:.4;cursor:not-allowed}
+header{height:66px;padding:0 22px;background:#0d1826;border-bottom:1px solid #2b4054;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.brand{display:flex;align-items:center;gap:12px}.symbol{background:#203d4a;border:1px solid #3b7380;border-radius:10px;padding:9px;color:#82e3f4;font-size:18px}
+.brand strong{font-size:16px;letter-spacing:.5px}.brand small{display:block;color:#86a0b8;letter-spacing:1.6px;font-size:10px;margin-top:3px}
+.headerBtns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+small.status{font-size:11px;color:#83c6a0;margin:0 6px}
+main{display:grid;grid-template-columns:240px minmax(440px,1fr) 262px;gap:0;min-height:calc(100vh - 66px)}
+aside{background:#101b29;padding:18px 15px;border-right:1px solid #273c51}
+aside.right{border-right:0;border-left:1px solid #273c51}
+h2{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:#89a5be;margin:20px 0 11px}
+h2:first-child{margin-top:0}
+.stack{display:grid;gap:8px}
+.add{width:100%;display:flex;gap:9px;align-items:center;text-align:left;padding:11px}
+.add .ic{width:29px;height:29px;border:1px solid #526579;border-radius:7px;display:grid;place-items:center;color:#ffcd92}
+.add span:last-child{flex:1}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;color:#9cb1c6;margin-bottom:6px}
+.field input,.field select{width:100%;min-width:0;background:#091623;border:1px solid #345067;color:#f5faff;border-radius:7px;padding:9px;outline:none}
+.field input[type=color]{height:36px;padding:2px;cursor:pointer}
+.field input[type=range]{accent-color:#efa45d;padding:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modes{display:flex;gap:6px}.modes button{flex:1;padding:9px 5px}
+.modes button.active{background:#2a4d57;border-color:#5ac6d2;color:#e5fbff}
+.info{border:1px solid #345066;border-radius:10px;padding:11px;background:#172536;color:#9db4ca;line-height:1.5;font-size:12px}
+.center{background:#0b1420;padding:18px 20px 40px;min-width:0}
+.toptools{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.toptools .lefttools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font-size:11px;background:#1d3042;color:#b6cce0;border:1px solid #39546a;border-radius:50px;padding:7px 10px}
+.stageframe{padding:9px;background:#1a2838;border-radius:12px;border:1px solid #42586d;box-shadow:0 14px 35px #0005}
+.stage{width:100%;aspect-ratio:16/9;position:relative;overflow:hidden;touch-action:none;background:linear-gradient(135deg,#223b50,#132132 50%,#2a333c);user-select:none}
+.stage.grid{background-image:linear-gradient(#ffffff0c 1px,transparent 1px),linear-gradient(90deg,#ffffff0c 1px,transparent 1px),linear-gradient(145deg,#223b50,#102030);background-size:5% 8.888%,5% 8.888%,100% 100%}
+#gameFrame{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;display:none;background:#142337}
+#elements{position:absolute;inset:0}
+.block{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre-wrap;word-break:break-word;overflow:hidden;cursor:grab;border-style:solid;line-height:1.12;padding:2px 6px;touch-action:none;box-shadow:0 3px 16px #0003}
+.block.label{box-shadow:none;background:transparent}
+.block.panel{justify-content:flex-start;align-items:flex-start}
+.block.selected{outline:2px solid #83e2ff;outline-offset:2px;z-index:100!important}
+.block:active{cursor:grabbing}
+.handle{position:absolute;right:0;bottom:0;width:15px;height:15px;background:#82e6fc;border:2px solid #0f2631;border-radius:3px;cursor:nwse-resize;z-index:4}
+.guidance{color:#87a0b8;margin-top:12px;font-size:12px;line-height:1.5}
+.guidance strong{color:#cde5f7}
+.selectionTitle{font-size:16px;font-weight:850;margin:0 0 5px}
+.selectionSub{color:#91a7ba;font-size:12px;margin-bottom:17px}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.actions button{flex:1}
+hr{border:0;border-top:1px solid #304458;margin:16px 0}
+.notice{padding:12px;background:#122637;border:1px solid #2c6073;color:#c2e3eb;border-radius:9px;line-height:1.5}
+.hidden{display:none!important}
+#fileInput{display:none}
+@media(max-width:1180px){main{grid-template-columns:210px minmax(390px,1fr) 235px}aside{padding:14px 10px}.center{padding:14px}}
+@media(max-width:850px){header{height:auto;padding:12px 14px;flex-wrap:wrap}main{grid-template-columns:1fr}.center{order:1}aside{order:2;border:0;border-top:1px solid #273c51}aside.right{order:3;border:0;border-top:1px solid #273c51}aside .stack{grid-template-columns:repeat(3,1fr)}.add{font-size:11px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="symbol">▣</span><div><strong>ARTILLERY · EDITOR VISUAL</strong><small>LAYOUT SANDBOX / V0.1</small></div></div>
+  <div class="headerBtns">
+    <small class="status" id="saveStatus">Salvo no navegador</small>
+    <button id="undoBtn" title="Desfazer última alteração">↶ Desfazer</button>
+    <button id="importBtn">Importar JSON</button>
+    <button id="copyBtn">Copiar JSON</button>
+    <button class="primary" id="exportBtn">Exportar layout</button>
+    <input type="file" accept=".json,application/json" id="fileInput">
+  </div>
+</header>
+<main>
+  <aside>
+    <h2>Tela em edição</h2>
+    <div class="modes"><button id="menuTab" class="active">Menu</button><button id="hudTab">HUD</button></div>
+    <h2>Adicionar elemento</h2>
+    <div class="stack">
+      <button class="add" data-add="button"><span class="ic">▣</span><span>Botão</span><span>＋</span></button>
+      <button class="add" data-add="text"><span class="ic">T</span><span>Texto</span><span>＋</span></button>
+      <button class="add" data-add="panel"><span class="ic">▤</span><span>Painel</span><span>＋</span></button>
+    </div>
+    <h2>Fundo da prévia</h2>
+    <div class="field"><select id="backgroundMode">
+      <option value="grid">Grade escura</option>
+      <option value="solid">Cor personalizada</option>
+      <option value="game">Batalha real — versão 0.2</option>
+    </select></div>
+    <div class="field" id="bgColorGroup"><label for="bgColor">Cor do fundo</label><input type="color" id="bgColor" value="#142235"></div>
+    <h2>Cores do projeto</h2>
+    <div class="two">
+      <div class="field"><label for="accentColor">Destaque</label><input type="color" id="accentColor" value="#f1a45a"></div>
+      <div class="field"><label for="defaultTextColor">Texto</label><input type="color" id="defaultTextColor" value="#eff7ff"></div>
+    </div>
+    <button id="accentSelected" style="width:100%">Aplicar destaque ao selecionado</button>
+    <h2>Ferramentas</h2>
+    <div class="stack">
+      <button id="resetScreen">Restaurar esta tela</button>
+      <a href="./index.html" style="color:#8ed6ef;text-decoration:none;padding:8px 0">Abrir jogo 0.2 ↗</a>
+    </div>
+    <h2>Sobre o editor</h2>
+    <div class="info">Este é um <strong>rascunho visual</strong>. Os botões não alteram o jogo ainda. Salve seu layout em JSON e envie o arquivo ou uma captura de tela no chat para refinarmos.</div>
+  </aside>
+  <section class="center">
+    <div class="toptools"><div class="lefttools"><strong id="screenTitle">MENU PRINCIPAL</strong><span class="pill">16:9</span><span class="pill" id="count">0 elementos</span></div><button class="compact" id="hideSelection">Limpar seleção</button></div>
+    <div class="stageframe"><div class="stage grid" id="stage"><iframe id="gameFrame" src="./index.html" loading="lazy" title="Jogo 0.2"></iframe><div id="elements"></div></div></div>
+    <div class="guidance"><strong>Como editar:</strong> arraste os elementos com o mouse; use a alça azul no canto para redimensionar. Clique para editar as propriedades. As alterações ficam salvas automaticamente neste navegador. Use <strong>Exportar layout</strong> para me mostrar o resultado.</div>
+  </section>
+  <aside class="right">
+    <h2>Propriedades do elemento</h2>
+    <div id="emptySelection" class="notice">Selecione um elemento na prévia ou adicione um novo botão, texto ou painel.</div>
+    <div id="inspector" class="hidden">
+      <div class="selectionTitle" id="selectionName">Botão</div><div class="selectionSub" id="selectionType">Elemento selecionado</div>
+      <div class="actions"><button id="duplicateBtn">Duplicar</button><button class="danger" id="deleteBtn">Excluir</button></div>
+      <div class="field"><label for="textField">Texto</label><input id="textField" type="text" maxlength="100"></div>
+      <div class="two">
+        <div class="field"><label for="xField">X (%)</label><input id="xField" type="number" min="0" max="100" step="0.1"></div>
+        <div class="field"><label for="yField">Y (%)</label><input id="yField" type="number" min="0" max="100" step="0.1"></div>
+        <div class="field"><label for="wField">Largura (%)</label><input id="wField" type="number" min="3" max="100" step="0.1"></div>
+        <div class="field"><label for="hField">Altura (%)</label><input id="hField" type="number" min="3" max="100" step="0.1"></div>
+      </div>
+      <hr>
+      <div class="two">
+        <div class="field"><label for="fillField">Fundo</label><input id="fillField" type="color"></div>
+        <div class="field"><label for="textColorField">Texto</label><input id="textColorField" type="color"></div>
+        <div class="field"><label for="borderField">Borda</label><input id="borderField" type="color"></div>
+        <div class="field"><label for="opacityField">Opacidade (%)</label><input id="opacityField" type="number" min="10" max="100"></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="fontSizeField">Fonte (px)</label><input id="fontSizeField" type="number" min="8" max="100"></div>
+        <div class="field"><label for="radiusField">Cantos (px)</label><input id="radiusField" type="number" min="0" max="80"></div>
+      </div>
+      <div class="field"><label for="borderWidthField">Espessura da borda (px)</label><input id="borderWidthField" type="range" min="0" max="8" step="1"></div>
+      <div class="actions"><button id="backBtn">Enviar para trás</button><button id="frontBtn">Trazer à frente</button></div>
+    </div>
+  </aside>
+</main>
+<script>
+(function(){
+"use strict";
+var KEY="artillery-layout-editor-v1", sequence=0, history=[], selected=null, current="menu", drag=null;
+var $=function(id){return document.getElementById(id);};
+function id(){return "el-"+Date.now().toString(36)+"-"+(++sequence);}
+function clone(obj){return JSON.parse(JSON.stringify(obj));}
+function clamp(v,a,b){return Math.min(b,Math.max(a,v));}
+function unit(v){return Math.round(v*10)/10;}
+function baseItem(type,text,x,y,w,h,fill,fg,border,fs){
+  return {id:id(),type:type,text:text,x:x,y:y,w:w,h:h,fill:fill,fg:fg,border:border,borderWidth:1,radius:9,fontSize:fs,opacity:100};
+}
+function template(){
+  return {version:1,background:"grid",bgColor:"#142235",accent:"#f1a45a",defaultText:"#eff7ff",screens:{
+    menu:[
+      baseItem("text","TÍTULO DO JOGO",5,9,38,12,"#162438","#f0f6ff","#162438",36),
+      baseItem("button","JOGAR",5,31,26,9,"#e9a25d","#18202d","#ffd39b",24),
+      baseItem("button","CAMPANHA",5,42,26,9,"#1e354a","#f0f6ff","#54718c",22),
+      baseItem("button","MULTIPLAYER",5,53,26,9,"#1e354a","#f0f6ff","#54718c",22),
+      baseItem("button","ARSENAL",5,64,26,9,"#1e354a","#f0f6ff","#54718c",22)
+    ],
+    hud:[
+      baseItem("panel","JOGADOR 1  |  VIDA 100",3,3,30,8,"#14283c","#eaf9ff","#406783",16),
+      baseItem("panel","JOGADOR 2  |  VIDA 100",67,3,30,8,"#382833","#fce7e2","#a8665a",16),
+      baseItem("button","DISPARAR",78,82,19,11,"#e9a25d","#1e2634","#f7bf84",20)
+    ]
+  }};
+}
+var state=template();
+try{
+  var saved=JSON.parse(localStorage.getItem(KEY)||"null");
+  if(valid(saved))state=saved;
+}catch(e){}
+function valid(data){
+  if(!data||!data.screens||!Array.isArray(data.screens.menu)||!Array.isArray(data.screens.hud))return false;
+  if(data.screens.menu.length>250||data.screens.hud.length>250)return false;
+  return ["menu","hud"].every(function(s){return data.screens[s].every(function(it){
+    return it&&["button","text","panel"].indexOf(it.type)>=0&&typeof it.text==="string"&&it.text.length<=100&&["x","y","w","h"].every(function(k){return typeof it[k]==="number"&&isFinite(it[k]);});
+  });});
+}
+function items(){return state.screens[current];}
+function chosen(){return items().find(function(it){return it.id===selected;})||null;}
+function persist(){
+  try{localStorage.setItem(KEY,JSON.stringify(state));$("saveStatus").textContent="Salvo no navegador";}
+  catch(e){$("saveStatus").textContent="Sem espaço para salvar";}
+}
+function snapshot(){history.push(clone(state));if(history.length>40)history.shift();$("undoBtn").disabled=false;}
+function setScreen(screen){current=screen;selected=null;$("menuTab").classList.toggle("active",screen==="menu");$("hudTab").classList.toggle("active",screen==="hud");$("screenTitle").textContent=screen==="menu"?"MENU PRINCIPAL":"INTERFACE DA BATALHA";render();}
+function make(type){
+  snapshot();
+  var n=items().length, x=clamp(34+(n%4)*4,0,70), y=clamp(18+(n%6)*8,0,88);
+  var it=baseItem(type,type==="button"?"NOVO BOTÃO":type==="text"?"NOVO TEXTO":"NOVO PAINEL",x,y,type==="text"?26:23,type==="text"?10:12,type==="text"?state.bgColor:state.accent,state.defaultText,"#57758e",type==="text"?29:20);
+  if(type==="button")it.fg="#172331";
+  if(type==="text")it.borderWidth=0;
+  items().push(it);selected=it.id;persist();render();
+}
+function render(){
+  var stage=$("stage");
+  stage.classList.toggle("grid",state.background==="grid");
+  stage.style.background=state.background==="solid"?state.bgColor:"";
+  $("gameFrame").style.display=state.background==="game"?"block":"none";
+  $("backgroundMode").value=state.background;$("bgColor").value=isColor(state.bgColor)?state.bgColor:"#142235";
+  $("accentColor").value=isColor(state.accent)?state.accent:"#f1a45a";
+  $("defaultTextColor").value=isColor(state.defaultText)?state.defaultText:"#eff7ff";
+  $("bgColorGroup").classList.toggle("hidden",state.background!=="solid");
+  $("count").textContent=items().length+" elementos";
+  var layer=$("elements");layer.replaceChildren();
+  items().forEach(function(it,index){
+    var el=document.createElement("div");el.className="block "+(it.type==="text"?"label":it.type==="panel"?"panel":"button")+(selected===it.id?" selected":"");
+    el.dataset.id=it.id;
+    el.style.left=it.x+"%";el.style.top=it.y+"%";el.style.width=it.w+"%";el.style.height=it.h+"%";
+    el.style.background=it.type==="text"?"transparent":(isColor(it.fill)?it.fill:"#20364b");
+    el.style.color=isColor(it.fg)?it.fg:"#ffffff";el.style.borderColor=isColor(it.border)?it.border:"#4d6175";
+    el.style.borderWidth=clamp(Number(it.borderWidth)||0,0,8)+"px";
+    el.style.borderRadius=clamp(Number(it.radius)||0,0,80)+"px";
+    el.style.fontSize="clamp(8px,"+(clamp(Number(it.fontSize)||18,8,100)/1280*100)+"cqw,100px)";
+    el.style.fontWeight=it.type==="text"?800:700;el.style.opacity=clamp(Number(it.opacity)||100,10,100)/100;
+    el.style.zIndex=index+1;
+    var label=document.createElement("span");label.textContent=it.text;el.appendChild(label);
+    if(selected===it.id){var handle=document.createElement("span");handle.className="handle";handle.dataset.resize="1";el.appendChild(handle);}
+    el.addEventListener("pointerdown",elementDown);
+    layer.appendChild(el);
+  });
+  updateInspector();
+}
+function isColor(v){return typeof v==="string"&&/^#[0-9a-fA-F]{6}$/.test(v);}
+function elementDown(e){
+  if(e.button!==0)return;
+  e.preventDefault();e.stopPropagation();
+  var el=e.currentTarget,it=items().find(function(x){return x.id===el.dataset.id;});
+  if(!it)return;
+  selected=it.id;
+  snapshot();
+  drag={id:it.id,mode:e.target.dataset.resize?"resize":"move",sx:e.clientX,sy:e.clientY,start:clone(it)};
+  render();
+}
+window.addEventListener("pointermove",function(e){
+  if(!drag)return;
+  var rect=$("stage").getBoundingClientRect(),it=items().find(function(x){return x.id===drag.id;});
+  if(!it)return;
+  var dx=(e.clientX-drag.sx)/rect.width*100,dy=(e.clientY-drag.sy)/rect.height*100;
+  if(drag.mode==="move"){
+    it.x=unit(clamp(drag.start.x+dx,0,100-it.w));it.y=unit(clamp(drag.start.y+dy,0,100-it.h));
+  }else{
+    it.w=unit(clamp(drag.start.w+dx,3,100-it.x));it.h=unit(clamp(drag.start.h+dy,3,100-it.y));
+  }
+  render();
+});
+window.addEventListener("pointerup",function(){if(drag){drag=null;persist();}});
+$("stage").addEventListener("pointerdown",function(e){if(e.target===$("stage")||e.target===$("elements")){selected=null;render();}});
+function updateInspector(){
+  var it=chosen();
+  $("inspector").classList.toggle("hidden",!it);$("emptySelection").classList.toggle("hidden",!!it);
+  if(!it)return;
+  $("selectionName").textContent=it.text||"Elemento";
+  $("selectionType").textContent=it.type==="button"?"BOTÃO":it.type==="panel"?"PAINEL":"TEXTO";
+  var fields={textField:"text",xField:"x",yField:"y",wField:"w",hField:"h",fillField:"fill",textColorField:"fg",borderField:"border",opacityField:"opacity",fontSizeField:"fontSize",radiusField:"radius",borderWidthField:"borderWidth"};
+  Object.keys(fields).forEach(function(node){
+    var field=$(node),value=it[fields[node]];
+    if(document.activeElement!==field)field.value=field.type==="color"&&!isColor(value)?"#15293d":value;
+  });
+}
+var fields={textField:"text",xField:"x",yField:"y",wField:"w",hField:"h",fillField:"fill",textColorField:"fg",borderField:"border",opacityField:"opacity",fontSizeField:"fontSize",radiusField:"radius",borderWidthField:"borderWidth"};
+Object.keys(fields).forEach(function(node){
+  $(node).addEventListener("focus",function(){snapshot();});
+  $(node).addEventListener("input",function(){
+    var it=chosen();if(!it)return;var key=fields[node],value=this.value;
+    if(["x","y","w","h","opacity","fontSize","radius","borderWidth"].includes(key)){value=Number(value);if(!isFinite(value))return;}
+    it[key]=value;
+    it.w=clamp(Number(it.w),3,100);it.h=clamp(Number(it.h),3,100);
+    it.x=clamp(Number(it.x),0,100-it.w);it.y=clamp(Number(it.y),0,100-it.h);
+    persist();render();
+  });
+});
+document.querySelectorAll("[data-add]").forEach(function(b){b.addEventListener("click",function(){make(b.dataset.add);});});
+$("menuTab").onclick=function(){setScreen("menu");};
+$("hudTab").onclick=function(){setScreen("hud");};
+$("backgroundMode").onchange=function(){snapshot();state.background=this.value;persist();render();};
+$("bgColor").oninput=function(){state.bgColor=this.value;persist();render();};
+$("accentColor").oninput=function(){state.accent=this.value;persist();render();};
+$("defaultTextColor").oninput=function(){state.defaultText=this.value;persist();render();};
+$("accentSelected").onclick=function(){var it=chosen();if(!it)return;snapshot();it.fill=state.accent;persist();render();};
+$("duplicateBtn").onclick=function(){var it=chosen();if(!it)return;snapshot();var cp=clone(it);cp.id=id();cp.x=clamp(cp.x+3,0,100-cp.w);cp.y=clamp(cp.y+3,0,100-cp.h);items().push(cp);selected=cp.id;persist();render();};
+$("deleteBtn").onclick=function(){if(!chosen())return;snapshot();state.screens[current]=items().filter(function(it){return it.id!==selected;});selected=null;persist();render();};
+$("frontBtn").onclick=function(){var it=chosen();if(!it)return;snapshot();state.screens[current]=items().filter(function(x){return x.id!==it.id;});items().push(it);persist();render();};
+$("backBtn").onclick=function(){var it=chosen();if(!it)return;snapshot();state.screens[current]=items().filter(function(x){return x.id!==it.id;});items().unshift(it);persist();render();};
+$("hideSelection").onclick=function(){selected=null;render();};
+$("undoBtn").onclick=function(){if(!history.length)return;state=history.pop();selected=null;persist();render();$("undoBtn").disabled=!history.length;};
+$("resetScreen").onclick=function(){if(!confirm("Restaurar os elementos da tela atual?"))return;snapshot();state.screens[current]=template().screens[current];selected=null;persist();render();};
+function exportData(){return JSON.stringify({format:"artillery-layout",version:1,updatedAt:new Date().toISOString(),design:state},null,2);}
+$("exportBtn").onclick=function(){
+  var blob=new Blob([exportData()],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download="artillery-layout-"+new Date().toISOString().slice(0,10)+".json";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1200);
+};
+$("copyBtn").onclick=async function(){
+  try{await navigator.clipboard.writeText(exportData());$("saveStatus").textContent="JSON copiado!";}
+  catch(e){var box=document.createElement("textarea");box.value=exportData();document.body.appendChild(box);box.select();document.execCommand("copy");box.remove();$("saveStatus").textContent="JSON copiado";}
+};
+$("importBtn").onclick=function(){$("fileInput").click();};
+$("fileInput").onchange=function(){
+  var f=this.files[0];if(!f)return;var reader=new FileReader();
+  reader.onload=function(){
+    try{var obj=JSON.parse(reader.result),next=obj.design||obj;if(!valid(next))throw new Error("Arquivo inválido");
+      if(!confirm("Substituir o layout atual pelo arquivo importado?"))return;
+      snapshot();state=next;state.background=["grid","solid","game"].includes(state.background)?state.background:"grid";
+      state.bgColor=isColor(state.bgColor)?state.bgColor:"#142235";
+      state.accent=isColor(state.accent)?state.accent:"#f1a45a";
+      state.defaultText=isColor(state.defaultText)?state.defaultText:"#eff7ff";
+      selected=null;persist();render();$("saveStatus").textContent="Layout importado";
+    }catch(e){alert("Não foi possível importar: "+e.message);}
+  };
+  reader.readAsText(f);this.value="";
+};
+window.addEventListener("keydown",function(e){
+  var tag=document.activeElement&&document.activeElement.tagName;
+  if(["INPUT","TEXTAREA","SELECT"].includes(tag))return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();$("undoBtn").click();return;}
+  var it=chosen();if(!it)return;
+  if(e.key==="Delete"||e.key==="Backspace"){$("deleteBtn").click();return;}
+  var step=e.shiftKey?1:0.2;
+  if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)){
+    e.preventDefault();snapshot();
+    if(e.key==="ArrowLeft")it.x=clamp(unit(it.x-step),0,100-it.w);
+    if(e.key==="ArrowRight")it.x=clamp(unit(it.x+step),0,100-it.w);
+    if(e.key==="ArrowUp")it.y=clamp(unit(it.y-step),0,100-it.h);
+    if(e.key==="ArrowDown")it.y=clamp(unit(it.y+step),0,100-it.h);
+    persist();render();
+  }
+});
+$("stage").style.containerType="inline-size";
+$("undoBtn").disabled=true;
+persist();setScreen("menu");
+})();
+</script>
+</body>
+</html>
