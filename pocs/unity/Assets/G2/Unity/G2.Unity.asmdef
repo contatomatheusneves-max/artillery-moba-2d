@@ -1,0 +1,5 @@
+{
+  "name": "Artillery.G2.Unity",
+  "rootNamespace": "Artillery.G2",
+  "references": ["Artillery.G2.Core"]
+}
