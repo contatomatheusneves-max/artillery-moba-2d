@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using Artillery.G2.Core;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace Artillery.G2
 {
     public sealed class TerrainCollider
     {
+        private static readonly ProfilerMarker GenerateGeometryMarker = new ProfilerMarker("G2.Terrain.GenerateGeometry");
         private readonly Transform root;
         private readonly PolygonCollider2D[] sources;
         private readonly int[] revisions;
@@ -74,7 +76,8 @@ namespace Artillery.G2
                 changed = true;
             }
             if (!changed) return;
-            Collider.GenerateGeometry();
+            using (GenerateGeometryMarker.Auto())
+                Collider.GenerateGeometry();
             Physics2D.SyncTransforms();
         }
     }

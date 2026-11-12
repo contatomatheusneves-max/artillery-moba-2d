@@ -49,6 +49,7 @@ namespace Artillery.G2
             Terrain = new TerrainCollider(Experiment.CreateTerrain(scenario), ground.transform);
 
             tread = new PhysicsMaterial2D("Experimental tread") { friction = 0.55f, bounciness = 0 };
+            ArenaWalls.Create(root.transform, tread);
             NVector[] positions = Experiment.Spawn(scenario);
             tanks = new TankBody[positions.Length];
             for (int i = 0; i < positions.Length; i++)

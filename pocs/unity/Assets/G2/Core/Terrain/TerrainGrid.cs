@@ -36,18 +36,22 @@ namespace Artillery.G2.Core
         private readonly int[] revisions;
         public int Width { get; }
         public int Height { get; }
+        public int ProtectedRows { get; }
         public float CellSize { get; }
         public int ChunksX { get; }
         public int ChunksY { get; }
         public int Version { get; private set; }
         public int SolidCount { get; private set; }
 
-        public TerrainGrid(int width, int height, float cellSize, Func<int, int, bool> fill)
+        public TerrainGrid(int width, int height, float cellSize, Func<int, int, bool> fill, int protectedRows = 0)
         {
             if (width <= 0 || height <= 0 || cellSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(width));
+            if (protectedRows < 0 || protectedRows > height)
+                throw new ArgumentOutOfRangeException(nameof(protectedRows));
             Width = width;
             Height = height;
+            ProtectedRows = protectedRows;
             CellSize = cellSize;
             ChunksX = (width + ChunkSize - 1) / ChunkSize;
             ChunksY = (height + ChunkSize - 1) / ChunkSize;
@@ -57,7 +61,7 @@ namespace Artillery.G2.Core
             for (int y = 0; y < height; y++)
             for (int x = 0; x < width; x++)
             {
-                if (!fill(x, y)) continue;
+                if (y >= ProtectedRows && !fill(x, y)) continue;
                 solid[x + y * width] = true;
                 SolidCount++;
             }
@@ -86,7 +90,7 @@ namespace Artillery.G2.Core
             if (cut.Radius <= 0) return;
             int minX = Math.Max(0, (int)MathF.Floor((MathF.Min(cut.From.X, cut.To.X) - cut.Radius) / CellSize));
             int maxX = Math.Min(Width - 1, (int)MathF.Floor((MathF.Max(cut.From.X, cut.To.X) + cut.Radius) / CellSize));
-            int minY = Math.Max(0, (int)MathF.Floor((MathF.Min(cut.From.Y, cut.To.Y) - cut.Radius) / CellSize));
+            int minY = Math.Max(ProtectedRows, (int)MathF.Floor((MathF.Min(cut.From.Y, cut.To.Y) - cut.Radius) / CellSize));
             int maxY = Math.Min(Height - 1, (int)MathF.Floor((MathF.Max(cut.From.Y, cut.To.Y) + cut.Radius) / CellSize));
             Vector2 axis = cut.To - cut.From;
             float lengthSquared = axis.LengthSquared();
@@ -144,6 +148,7 @@ namespace Artillery.G2.Core
 
         public void AddTo(ref StateHash hash)
         {
+            hash.Add(ProtectedRows);
             hash.Add(Version);
             foreach (bool cell in solid)
                 hash.Add(cell ? 1 : 0);

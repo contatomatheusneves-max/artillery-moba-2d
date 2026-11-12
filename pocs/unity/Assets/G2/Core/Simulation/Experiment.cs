@@ -8,7 +8,7 @@ namespace Artillery.G2.Core
     // Tuning values for G2-01 only.
     public static class Experiment
     {
-        public const string Version = "g2-01.1";
+        public const string Version = "g2-01.2";
         public const int Hz = 60;
         public const float Step = 1f / Hz;
         public const int VolleyTick = 45;
@@ -16,6 +16,7 @@ namespace Artillery.G2.Core
         public const float Width = 40f;
         public const float Height = 18f;
         public const float Cell = 0.25f;
+        public const int ProtectedTerrainRows = 2;
         public const float Gravity = 9.81f;
         public const float ShellRadius = 0.095f;
         public const float BlastRadius = 1.65f;
@@ -43,7 +44,8 @@ namespace Artillery.G2.Core
         public static TerrainGrid CreateTerrain(Scenario scenario)
         {
             if (scenario == Scenario.Volley)
-                return new TerrainGrid(160, 72, Cell, (x, y) => y < 16 || (x >= 68 && x < 87 && y < 47));
+                return new TerrainGrid(160, 72, Cell, (x, y) => y < 16 || (x >= 68 && x < 87 && y < 47),
+                    ProtectedTerrainRows);
 
             var grid = new TerrainGrid(160, 72, Cell, (x, y) =>
             {
@@ -51,7 +53,7 @@ namespace Artillery.G2.Core
                 float surface = 4.45f + 1.4f * Peak(worldX, 29f, 8f)
                     + 4.35f * Peak(worldX, 20.5f, 6.8f) + 0.75f * Peak(worldX, 2.5f, 5f);
                 return (y + 0.5f) * Cell < surface;
-            });
+            }, ProtectedTerrainRows);
             grid.Remove(new[]
             {
                 new Cut(new Vector2(17.3f, 3.12f), new Vector2(22.8f, 3.5f), 0.68f),

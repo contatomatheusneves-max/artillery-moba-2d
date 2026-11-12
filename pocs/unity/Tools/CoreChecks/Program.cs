@@ -8,6 +8,8 @@ var checks = new Action[]
 {
     TerrainCutAndRectangles,
     ChunkBoundaryAndNoOp,
+    ProtectedFloorSurvivesCircularCut,
+    ProtectedFloorSurvivesTunnelCut,
     AimPowerAndGravity,
     ResweepAfterEarlierImpact,
     EqualTimeImpactsAreGrouped,
@@ -57,6 +59,44 @@ static void ChunkBoundaryAndNoOp()
     Require(grid.Version == 1 && Enumerable.Range(0, 4).All(i => grid.ChunkRevision(i) == 1),
         "dirty chunk revisions did not cover the corner");
     Require(grid.Remove(cuts) == 0 && grid.Version == 1, "no-op invalidated terrain");
+}
+
+static void ProtectedFloorSurvivesCircularCut()
+{
+    var grid = new TerrainGrid(20, 12, Experiment.Cell, (_, y) => y >= 2, protectedRows: 2);
+    CheckSolidFloor(grid);
+    var center = new Vector2(2.125f, 0.35f);
+    Require(grid.Remove(new[] { new Cut(center, center, 0.85f) }) > 0, "crater removed no unprotected cells");
+    Require(!grid.IsSolid(8, 2) && grid.IsSolid(0, 2), "crater did not remove only nearby soil above the floor");
+    CheckSolidFloor(grid);
+
+    int revision = grid.Version;
+    var insideFloor = new Vector2(0.125f, 0.125f);
+    Require(grid.Remove(new[] { new Cut(insideFloor, insideFloor, 0.2f) }) == 0 &&
+        grid.Version == revision, "protected-only cut changed the terrain revision");
+}
+
+static void ProtectedFloorSurvivesTunnelCut()
+{
+    foreach (Scenario scenario in new[] { Scenario.Sandbox, Scenario.Volley })
+    {
+        var grid = Experiment.CreateTerrain(scenario);
+        Require(grid.ProtectedRows == Experiment.ProtectedTerrainRows && grid.ProtectedRows > 0,
+            "scenario did not configure its floor");
+        var tunnel = new Cut(new Vector2(-1, 0.12f), new Vector2(Experiment.Width + 1, 0.6f), 0.6f);
+        Require(grid.Remove(new[] { tunnel }) > 0, "tunnel removed no unprotected cells");
+        for (int x = 0; x < grid.Width; x++)
+            Require(!grid.IsSolid(x, grid.ProtectedRows), "tunnel stopped early above the floor at " + x);
+        Require(grid.IsSolid(grid.Width / 2, grid.ProtectedRows + 4), "tunnel removed its roof");
+        CheckSolidFloor(grid);
+    }
+}
+
+static void CheckSolidFloor(TerrainGrid grid)
+{
+    for (int y = 0; y < grid.ProtectedRows; y++)
+    for (int x = 0; x < grid.Width; x++)
+        Require(grid.IsSolid(x, y), $"protected cell {x},{y} was empty");
 }
 
 static void AimPowerAndGravity()

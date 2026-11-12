@@ -56,6 +56,57 @@ namespace Artillery.G2.Tests
         }
 
         [Test]
+        public void ProtectedFloorKeepsItsColliderAndSupportsATankAfterDeepCuts()
+        {
+            using var world = new PocWorld(Scenario.Volley);
+            TankBody tank = world.Tanks[0];
+            float floor = Experiment.ProtectedTerrainRows * Experiment.Cell;
+            world.Step(Drill(0, 12, floor, 12, floor));
+            world.Step(Drill(1, 12, -1, 12, 5));
+
+            var hit = world.Physics.Raycast(new Vector2(12, floor + 0.5f), Vector2.down, 2);
+            Assert.That(hit.collider, Is.SameAs(world.Terrain.Collider));
+            Assert.That(hit.point.y, Is.EqualTo(floor).Within(0.04f));
+            Assert.That(world.Physics.OverlapPoint(new Vector2(12, floor * 0.5f)),
+                Is.SameAs(world.Terrain.Collider));
+
+            Advance(world, 100);
+            Assert.That(tank.Body.position.y, Is.EqualTo(floor + tank.Hull.size.y / 2).Within(0.08f));
+            Assert.That(tank.Hull.IsTouching(world.Terrain.Collider), Is.True);
+        }
+
+        [Test]
+        public void TanksStayInsideBothSideWallsWhileDrivingOutward()
+        {
+            const float tolerance = 0.06f;
+            foreach (int direction in new[] { -1, 1 })
+            {
+                using var world = new PocWorld(Scenario.Volley);
+                TankBody tank = world.Tanks[0];
+                float edge = direction < 0 ? 0 : Experiment.Width;
+                tank.Body.position = new Vector2(edge - direction * 1.5f, 4.57f);
+                Physics2D.SyncTransforms();
+                Advance(world, 45);
+
+                world.Step(new TickCommand { tick = world.Tick, angle = 38, power = 74, drive = direction });
+                for (int i = 0; i < 90; i++)
+                {
+                    world.Step();
+                    Assert.That(tank.Hull.bounds.min.x, Is.GreaterThanOrEqualTo(-tolerance));
+                    Assert.That(tank.Hull.bounds.max.x, Is.LessThanOrEqualTo(Experiment.Width + tolerance));
+                    Assert.That(tank.Body.position.y, Is.GreaterThan(4.2f));
+                }
+
+                float outerHull = direction < 0 ? tank.Hull.bounds.min.x : tank.Hull.bounds.max.x;
+                Assert.That(outerHull, Is.EqualTo(edge).Within(0.1f));
+                Assert.That(Mathf.Abs(tank.Body.linearVelocity.x), Is.LessThan(0.3f));
+                var wall = world.Physics.OverlapPoint(new Vector2(edge + direction * 0.5f, tank.Body.position.y));
+                Assert.That(wall, Is.TypeOf<BoxCollider2D>());
+                Assert.That(tank.Hull.IsTouching(wall), Is.True);
+            }
+        }
+
+        [Test]
         public void FourShellsCoexistAndLaterShellsSeeChangedWall()
         {
             using var world = new PocWorld(Scenario.Volley);
@@ -88,10 +139,36 @@ namespace Artillery.G2.Tests
         }
 
         [Test]
+        public void FastShotHitsTankMovingAcrossItsHeight()
+        {
+            using var world = new PocWorld(Scenario.Volley);
+            Advance(world, 45);
+            TankBody shooter = world.Tanks[0];
+            TankBody target = world.Tanks[1];
+            shooter.Body.position = new Vector2(27, 4.34f);
+            var targetStart = new Vector2(31, 5.45f);
+            target.Body.position = targetStart;
+            target.Body.linearVelocity = new Vector2(-2, -6);
+            Physics2D.SyncTransforms();
+            Assert.That(target.Hull.bounds.min.y, Is.GreaterThan(shooter.Pivot.y + Experiment.ShellRadius));
+
+            world.Step(new TickCommand { tick = world.Tick, angle = 0, power = 100, fire = true });
+            Assert.That(world.Weapon.Shots.Single().Velocity.X, Is.EqualTo(Experiment.LaunchSpeed(100)));
+            for (int i = 0; i < 15 && world.Trace.impacts.Count == 0; i++)
+                world.Step();
+
+            Assert.That(world.Trace.impacts.Count, Is.EqualTo(1));
+            Assert.That(world.Trace.impacts[0].target, Is.EqualTo(target.Id));
+            Assert.That(target.Body.position.y, Is.LessThan(targetStart.y - 0.4f));
+            Assert.That(target.Body.position.x, Is.LessThan(targetStart.x - 0.08f));
+            Assert.That(target.Body.linearVelocity.y, Is.LessThan(-3f));
+        }
+
+        [Test]
         public void ReplayMatchesAcrossFreshWorldsAndFrameSchedules()
         {
             RunTrace first = ReplayAt(30);
-            RunTrace second = ReplayAt(144);
+            RunTrace second = ReplayAt(144, first);
             Assert.That(first.hashes.Count, Is.EqualTo(180));
             Assert.That(first.impacts, Is.Not.Empty);
             CollectionAssert.AreEqual(first.commands, second.commands);
@@ -99,12 +176,21 @@ namespace Artillery.G2.Tests
             CollectionAssert.AreEqual(first.hashes, second.hashes);
         }
 
-        private static RunTrace ReplayAt(int renderRate)
+        private static RunTrace ReplayAt(int renderRate, RunTrace recording = null)
         {
             using var world = new PocWorld(Scenario.Volley);
             var clock = new FixedClock();
+            int nextCommand = 0;
             void Step()
             {
+                if (recording != null)
+                {
+                    if (nextCommand < recording.commands.Count && recording.commands[nextCommand].tick == world.Tick)
+                        world.Step(recording.commands[nextCommand++]);
+                    else
+                        world.Step();
+                    return;
+                }
                 switch (world.Tick)
                 {
                     case Experiment.VolleyTick: world.Step(Volley(world.Tick)); break;
