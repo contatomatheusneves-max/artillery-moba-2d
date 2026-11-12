@@ -1,0 +1,14 @@
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Bb]uilds/
+/[Mm]emoryCaptures/
+/TestResults/
+**/bin/
+**/obj/
+*.csproj.user
+*.sln
+*.slnx
+/*.csproj

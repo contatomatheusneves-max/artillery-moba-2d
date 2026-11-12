@@ -1,0 +1,7 @@
+{
+  "name": "Artillery.G2.PlayMode",
+  "rootNamespace": "Artillery.G2.Tests",
+  "references": ["Artillery.G2.Core", "Artillery.G2.Unity"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}
