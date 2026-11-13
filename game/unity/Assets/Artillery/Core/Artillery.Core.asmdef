@@ -1,0 +1,5 @@
+{
+  "name": "Artillery.Core",
+  "rootNamespace": "Artillery.Core",
+  "noEngineReferences": true
+}
