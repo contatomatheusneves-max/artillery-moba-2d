@@ -1,0 +1,7 @@
+{
+  "name": "Artillery.PlayMode",
+  "rootNamespace": "Artillery.Tests",
+  "references": ["Artillery.Core", "Artillery.Runtime", "Artillery.Gameplay", "Artillery.Bootstrap"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

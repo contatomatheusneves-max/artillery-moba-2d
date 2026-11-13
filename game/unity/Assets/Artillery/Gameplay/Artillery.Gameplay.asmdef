@@ -1,0 +1,5 @@
+{
+  "name": "Artillery.Gameplay",
+  "rootNamespace": "Artillery.Gameplay",
+  "references": ["Artillery.Core", "Artillery.Runtime"]
+}
